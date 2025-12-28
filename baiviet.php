@@ -1,4 +1,5 @@
 <?php
+header('Content-Type: text/html; charset=utf-8'); // Đảm bảo hiển thị tiếng Việt
 // baiviet.php
 
 // BẮT ĐẦU PHẦN DEBUG: Bật hiển thị lỗi PHP
@@ -10,27 +11,36 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 require_once 'connect.php'; // Đảm bảo $conn là kết nối PDO
 
+// KHỞI TẠO BIẾN $USER_ID ĐỂ TRÁNH LỖI UNDEFINED VARIABLE
+$user_id = $_SESSION['user_id'] ?? 0;
+// Lấy danh sách chủ đề để lọc
+$chu_de_list = [];
+$res = $conn->query('SELECT id, ten_chude FROM chude ORDER BY ten_chude ASC');
+while ($row = $res->fetch(PDO::FETCH_ASSOC)) $chu_de_list[] = $row;
+
 // KIỂM TRA XEM PHẢI LÀ REQUEST ĐĂNG BÀI KHÔNG
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_article'])) {
     // 1. Lấy dữ liệu từ form
+
     $nguoi_dung_id = $_SESSION['user_id'] ?? null;
+    $chu_de_id = intval($_POST['chu_de_id'] ?? 0);
     $tieu_de = trim($_POST['tieu_de'] ?? '');
     $noi_dung = trim($_POST['noi_dung'] ?? '');
     $trang_thai = 'pending'; // Mặc định là chờ duyệt
 
     // DEBUG 1: Kiểm tra các biến đầu vào
-    if (!$nguoi_dung_id || empty($tieu_de) || empty($noi_dung)) {
-        die("LỖI DEBUG 1: Thiếu dữ liệu (ID User: $nguoi_dung_id, Tiêu đề: $tieu_de)");
+    if (!$nguoi_dung_id || empty($tieu_de) || empty($noi_dung) || $chu_de_id == 0) {
+        die("LỖI DEBUG 1: Thiếu dữ liệu (ID User: $nguoi_dung_id, Tiêu đề: $tieu_de, Chủ đề: $chu_de_id)");
     }
 
     // 2. Xử lý INSERT bài viết vào bảng bai_viet
     try {
-        $stmt_post = $conn->prepare("INSERT INTO bai_viet (nguoi_dung_id, tieu_de, noi_dung, trang_thai) VALUES (?, ?, ?, ?)");
+        $stmt_post = $conn->prepare("INSERT INTO bai_viet (nguoi_dung_id, chu_de_id, tieu_de, noi_dung, trang_thai) VALUES (?, ?, ?, ?, ?)");
         // DEBUG 2: Kiểm tra lỗi SQL Prepare
         if (!$stmt_post) {
             die("LỖI DEBUG 2: Lỗi Prepare Bài Viết: " . json_encode($conn->errorInfo()));
         }
-        $stmt_post->execute([$nguoi_dung_id, $tieu_de, $noi_dung, $trang_thai]);
+        $stmt_post->execute([$nguoi_dung_id, $chu_de_id, $tieu_de, $noi_dung, $trang_thai]);
         // 3. Lấy ID của bài viết vừa tạo
         $post_id = $conn->lastInsertId(); 
 
@@ -222,24 +232,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['post_comment'])) {
     echo json_encode(['success' => false, 'message' => 'Lỗi bình luận!']);
     exit();
 }
-?>
-<?php
+
 // --- [LẤY DANH SÁCH BÀI VIẾT, BÀI CHỜ DUYỆT, BỊ TỪ CHỐI] ---
 $posts = [];
 $my_pending_posts = [];
 $my_rejected_posts = [];
 
-// Lấy bài viết đã duyệt (công khai)
-$sql = "SELECT bv.*, nd.ho_ten,
+// Lấy danh sách chủ đề để lọc
+$chu_de_list = [];
+$res = $conn->query('SELECT id, ten_chude FROM chude ORDER BY ten_chude ASC');
+while ($row = $res->fetch(PDO::FETCH_ASSOC)) $chu_de_list[] = $row;
+
+// Xử lý lọc chủ đề
+$filter_chu_de_id = intval($_GET['chu_de_id'] ?? 0);
+
+// Lấy bài viết đã duyệt (công khai) kèm tên chủ đề
+$sql = "SELECT bv.*, nd.ho_ten, cd.ten_chude,
         (SELECT COUNT(*) FROM bai_viet_yeuthich WHERE bai_viet_id = bv.id) as total_likes,
         (SELECT COUNT(*) FROM bai_viet_yeuthich WHERE bai_viet_id = bv.id AND nguoi_dung_id = ?) as is_liked
         FROM bai_viet bv
         LEFT JOIN nguoi_dung nd ON bv.nguoi_dung_id = nd.id
-        WHERE bv.trang_thai = 'approved'
-        ORDER BY bv.ngay_tao DESC";
-$user_id = $_SESSION['user_id'] ?? 0;
+        LEFT JOIN chude cd ON bv.chu_de_id = cd.id
+        WHERE bv.trang_thai = 'approved'";
+$params = [$user_id];
+if ($filter_chu_de_id > 0) {
+    $sql .= " AND bv.chu_de_id = ?";
+    $params[] = $filter_chu_de_id;
+}
+$sql .= " ORDER BY bv.ngay_tao DESC";
 $stmt = $conn->prepare($sql);
-$stmt->execute([$user_id]);
+$stmt->execute($params);
 $posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Lấy bài viết chờ duyệt của tôi
@@ -702,6 +724,27 @@ if ($user_id) {
         .noti-item h4 { margin: 0 0 5px; font-size: 14px; font-weight: 700; color: #3d6b3f; }
         .noti-item p { margin: 0; font-size: 13px; color: #555; line-height: 1.4; }
         .noti-item small { display: block; margin-top: 5px; font-size: 11px; color: #999; }
+        .topic-tabs { margin-bottom:2rem; }
+        .topic-tab {
+    display:inline-block;
+    padding:10px 24px;
+    background:#fff;
+    border:1.5px solid #e8e0c5;
+    border-radius:30px;
+    color:#3d6b3f;
+    font-weight:600;
+    font-size:1rem;
+    text-decoration:none;
+    transition:all 0.2s;
+    box-shadow:0 2px 8px rgba(0,0,0,0.04);
+    margin-bottom:6px;
+}
+.topic-tab:hover, .topic-tab.active {
+    background:#3d6b3f;
+    color:#fff;
+    border-color:#3d6b3f;
+    box-shadow:0 4px 16px rgba(61,107,63,0.08);
+}
 </style>
 </head>
 <body>
@@ -743,6 +786,61 @@ if ($user_id) {
         <h1 style="text-align: center; color: #316339ff; margin-bottom: 2rem;">
             <i class="fas fa-newspaper"></i> Cộng Đồng Chia Sẻ
         </h1>
+        <!-- Bộ lọc chủ đề dạng tab -->
+        <div class="topic-tabs" style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-bottom:2rem;">
+    <a href="baiviet.php" class="topic-tab<?= ($filter_chu_de_id == 0) ? ' active' : '' ?>">
+        <i class="fas fa-layer-group" style="margin-right:6px;"></i> Tất cả
+    </a>
+    <?php foreach ($chu_de_list as $cd): ?>
+        <a href="baiviet.php?chu_de_id=<?= $cd['id'] ?>" class="topic-tab<?= ($filter_chu_de_id == $cd['id']) ? ' active' : '' ?>">
+            <i class="fas fa-tag" style="margin-right:6px;color:#8ab74a;"></i> <?= htmlspecialchars($cd['ten_chude']) ?>
+        </a>
+    <?php endforeach; ?>
+</div>
+<style>
+.topic-tabs {
+    margin-bottom: 2rem;
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 10px;
+    overflow-x: auto;
+    justify-content: center;
+    scrollbar-width: thin;
+    padding-bottom: 4px;
+}
+.topic-tab {
+    display: inline-flex;
+    align-items: center;
+    padding: 8px 20px;
+    background: linear-gradient(90deg, #e0ffe7 0%, #f7f9f6 100%);
+    border: none;
+    border-radius: 24px;
+    color: #316339;
+    font-weight: 600;
+    font-size: 1rem;
+    text-decoration: none;
+    transition: all 0.22s cubic-bezier(.4,0,.2,1);
+    box-shadow: 0 2px 12px rgba(61,107,63,0.07);
+    margin-bottom: 0;
+    white-space: nowrap;
+    position: relative;
+    cursor: pointer;
+}
+.topic-tab i {
+    font-size: 1.1em;
+    margin-right: 6px;
+    color: #8ab74a;
+    transition: color 0.2s;
+}
+.topic-tab:hover, .topic-tab.active {
+    background: linear-gradient(90deg, #8ab74a 0%, #3d6b3f 100%);
+    color: #fff;
+    box-shadow: 0 4px 18px rgba(61,107,63,0.13);
+}
+.topic-tab.active i, .topic-tab:hover i {
+    color: #fff;
+}
+</style>
         
         <?php if (isset($success)): ?>
             <div class="alert alert-success"><?php echo $success; ?></div>
@@ -754,9 +852,26 @@ if ($user_id) {
         
         <!-- Form đăng bài -->
         <?php if (isset($_SESSION['user_id'])): ?>
+        <?php
+        // Lấy danh sách chủ đề từ DB
+        $chu_de_list = [];
+        // Lấy chủ đề từ bảng chude (admin/qlchude.php)
+        $res = $conn->query('SELECT id, ten_chude FROM chude ORDER BY ten_chude ASC');
+        while ($row = $res->fetch(PDO::FETCH_ASSOC)) $chu_de_list[] = $row;
+        ?>
         <div class="post-form">
             <h2><i class="fas fa-pen"></i> Chia Sẻ Bài Viết Mới</h2>
             <form method="POST">
+                <div class="form-group">
+                    <label>Chủ đề *</label>
+                    <select name="chu_de_id" required>
+                        <option value="">-- Chọn chủ đề --</option>
+                        <?php foreach (
+                            $chu_de_list as $cd): ?>
+                            <option value="<?= $cd['id'] ?>"><?= htmlspecialchars($cd['ten_chude']) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
                 <div class="form-group">
                     <label>Tiêu Đề *</label>
                     <input type="text" name="tieu_de" placeholder="Nhập tiêu đề bài viết..." required>
@@ -836,78 +951,6 @@ if ($user_id) {
                         <button class="btn-submit" onclick="savePost(<?php echo $pending['id']; ?>)">
                             <i class="fas fa-save"></i> Lưu
                         </button>
-                        <button class="btn-edit" onclick="cancelEdit(<?php echo $pending['id']; ?>)">
-                            <i class="fas fa-times"></i> Hủy
-                        </button>
-                    </div>
-                </div>
-            </div>
-            <?php endforeach; ?>
-        </div>
-        <?php endif; ?>
-        
-        <!-- Bài viết bị từ chối -->
-        <?php if (!empty($my_rejected_posts)): ?>
-        <div class="rejected-posts-section">
-            <h2 style="color: #991b1b; margin-bottom: 1.5rem;">
-                <i class="fas fa-times-circle"></i> Bài Viết Bị Từ Chối (<?php echo count($my_rejected_posts); ?>)
-            </h2>
-            <p style="color: #991b1b; margin-bottom: 1rem; font-size: 0.875rem;">
-                <i class="fas fa-info-circle"></i> Hãy chỉnh sửa và gửi lại để được duyệt
-            </p>
-            <?php foreach ($my_rejected_posts as $rejected): ?>
-            <div class="post-item rejected" id="rejected-post-<?php echo $rejected['id']; ?>">
-                <div class="post-header">
-                    <div>
-                        <span class="status-badge status-rejected">
-                            <i class="fas fa-times-circle"></i> Từ chối
-                        </span>
-                        <span class="post-date" style="margin-left: 1rem;">
-                            <i class="fas fa-clock"></i> 
-                            <?php echo date('d/m/Y H:i', strtotime($rejected['ngay_tao'])); ?>
-                        </span>
-                    </div>
-                    <div style="display: flex; gap: 0.5rem;">
-                        <button class="btn-edit" onclick="editPost(<?php echo $rejected['id']; ?>)">
-                            <i class="fas fa-edit"></i> Sửa
-                        </button>
-                        <button class="btn-resubmit" onclick="resubmitPost(<?php echo $rejected['id']; ?>)">
-                            <i class="fas fa-redo"></i> Gửi lại
-                        </button>
-                        <button class="btn-delete" onclick="deletePost(<?php echo $rejected['id']; ?>)">
-                            <i class="fas fa-trash"></i> Xóa
-                        </button>
-                    </div>
-                </div>
-                
-                <h3 class="post-title" id="title-<?php echo $rejected['id']; ?>">
-                    <?php echo htmlspecialchars($rejected['tieu_de']); ?>
-                </h3>
-                <div class="post-content" id="content-<?php echo $rejected['id']; ?>">
-                    <?php echo nl2br(htmlspecialchars($rejected['noi_dung'])); ?>
-                </div>
-                
-                <!-- Form chỉnh sửa (ẩn) -->
-                <div id="edit-form-<?php echo $rejected['id']; ?>" style="display: none; margin-top: 1rem;">
-                    <div class="form-group">
-                        <label>Tiêu Đề</label>
-                        <input type="text" id="edit-title-<?php echo $rejected['id']; ?>" 
-                               value="<?php echo htmlspecialchars($rejected['tieu_de']); ?>" 
-                               class="form-control">
-                    </div>
-                    <div class="form-group">
-                        <label>Nội Dung</label>
-                        <textarea id="edit-content-<?php echo $rejected['id']; ?>" 
-                                  style="width: 100%; padding: 0.75rem; border: 2px solid #e2e8f0; border-radius: 8px; min-height: 150px;"
-                        ><?php echo htmlspecialchars($rejected['noi_dung']); ?></textarea>
-                    </div>
-                    <div style="display: flex; gap: 0.5rem;">
-                        <button class="btn-submit" onclick="savePost(<?php echo $rejected['id']; ?>)">
-                            <i class="fas fa-save"></i> Lưu
-                        </button>
-                        <button class="btn-edit" onclick="cancelEdit(<?php echo $rejected['id']; ?>)">
-                            <i class="fas fa-times"></i> Hủy
-                        </button>
                     </div>
                 </div>
             </div>
@@ -964,6 +1007,9 @@ if ($user_id) {
                     </div>
                     
                     <h3 class="post-title"><?php echo htmlspecialchars($post['tieu_de']); ?></h3>
+                    <div style="margin-bottom: 0.5rem; color: #6ea13a; font-size: 1rem; font-weight: 600;">
+                        <i class="fas fa-tag"></i> Chủ đề: <?php echo htmlspecialchars($post['ten_chude'] ?? 'Không xác định'); ?>
+                    </div>
                     <div class="post-content post-content-toggle">
                         <?php echo nl2br(htmlspecialchars($post['noi_dung'])); ?>
                     </div>
@@ -1065,6 +1111,7 @@ if ($user_id) {
             },
             success: function(response) {
                 if (response.success) {
+                    alert(response.message);
                     location.reload();
                 } else {
                     alert(response.message);

@@ -1,3 +1,4 @@
+
 <?php
 require_once 'config.php';
 
@@ -46,11 +47,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     if ($_POST['action'] === 'view') {
         $id = (int)($_POST['id'] ?? 0);
         
-        // Lấy thông tin bài viết
-        $sql = "SELECT bv.*, nd.ho_ten, nd.email 
-                FROM bai_viet bv 
-                LEFT JOIN nguoi_dung nd ON bv.nguoi_dung_id = nd.id 
-                WHERE bv.id = $id";
+        // Lấy thông tin bài viết (có cả tên chủ đề)
+        $sql = "SELECT bv.*, nd.ho_ten, nd.email, cd.ten_chude 
+            FROM bai_viet bv 
+            LEFT JOIN nguoi_dung nd ON bv.nguoi_dung_id = nd.id 
+            LEFT JOIN chude cd ON bv.chu_de_id = cd.id 
+            WHERE bv.id = $id";
         $result = $conn->query($sql);
         
         if ($result && $post = $result->fetch_assoc()) {
@@ -80,20 +82,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         }
         exit();
     }
+    // TỰ ĐỘNG GÁN CHỦ ĐỀ CHO BÀI VIẾT CHƯA CÓ CHỦ ĐỀ (nếu có chủ đề)
+$result = $conn->query("SELECT id FROM chude ORDER BY id ASC LIMIT 1");
+if ($result && $row = $result->fetch_assoc()) {
+    $first_chu_de_id = (int)$row['id'];
+    // Gán chủ đề đầu tiên cho các bài viết chưa có chủ đề
+    $conn->query("UPDATE bai_viet SET chu_de_id = $first_chu_de_id WHERE chu_de_id IS NULL OR chu_de_id = 0");
+}
 }
 
 // Create tables if not exist
 $conn->query("CREATE TABLE IF NOT EXISTS bai_viet (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nguoi_dung_id INT NOT NULL,
+    chu_de_id INT DEFAULT NULL,
     tieu_de VARCHAR(255) NOT NULL,
     noi_dung TEXT NOT NULL,
     trang_thai ENUM('pending','approved','rejected') DEFAULT 'pending',
     ngay_tao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     ngay_cap_nhat TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_trang_thai (trang_thai),
-    INDEX idx_nguoi_dung (nguoi_dung_id)
+    INDEX idx_nguoi_dung (nguoi_dung_id),
+    INDEX idx_chude (chu_de_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+// Đảm bảo cột chu_de_id tồn tại (nếu nâng cấp từ bản cũ)
+$result = $conn->query("SHOW COLUMNS FROM bai_viet LIKE 'chu_de_id'");
+if ($result && $result->num_rows == 0) {
+    $conn->query("ALTER TABLE bai_viet ADD COLUMN chu_de_id INT DEFAULT NULL, ADD INDEX idx_chude (chu_de_id)");
+}
 
 $conn->query("CREATE TABLE IF NOT EXISTS binh_luan_bai_viet (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -113,12 +130,13 @@ if ($filter === 'pending') $where = "WHERE bv.trang_thai = 'pending'";
 elseif ($filter === 'approved') $where = "WHERE bv.trang_thai = 'approved'";
 elseif ($filter === 'rejected') $where = "WHERE bv.trang_thai = 'rejected'";
 
-$sql = "SELECT bv.*, nd.ho_ten, nd.email,
-        (SELECT COUNT(*) FROM binh_luan_bai_viet WHERE bai_viet_id = bv.id) as so_binh_luan
-        FROM bai_viet bv 
-        LEFT JOIN nguoi_dung nd ON bv.nguoi_dung_id = nd.id 
-        $where
-        ORDER BY bv.ngay_tao DESC";
+$sql = "SELECT bv.*, nd.ho_ten, nd.email, cd.ten_chude,
+    (SELECT COUNT(*) FROM binh_luan_bai_viet WHERE bai_viet_id = bv.id) as so_binh_luan
+    FROM bai_viet bv 
+    LEFT JOIN nguoi_dung nd ON bv.nguoi_dung_id = nd.id 
+    LEFT JOIN chude cd ON bv.chu_de_id = cd.id
+    $where
+    ORDER BY bv.ngay_tao DESC";
 $result = $conn->query($sql);
 if ($result) {
     while ($row = $result->fetch_assoc()) {
@@ -201,19 +219,11 @@ include 'header.php';
 <div class="table-container">
     <div class="section-header">
         <h2>Danh Sách Bài Viết (<?php echo count($posts); ?>)</h2>
-        <div style="display: flex; gap: 0.5rem;">
-            <a href="qlbaiviet.php?filter=all" class="btn <?php echo $filter === 'all' ? 'btn-primary' : ''; ?>">
-                Tất cả
-            </a>
-            <a href="qlbaiviet.php?filter=pending" class="btn <?php echo $filter === 'pending' ? 'btn-primary' : ''; ?>">
-                Chờ duyệt
-            </a>
-            <a href="qlbaiviet.php?filter=approved" class="btn <?php echo $filter === 'approved' ? 'btn-primary' : ''; ?>">
-                Đã duyệt
-            </a>
-            <a href="qlbaiviet.php?filter=rejected" class="btn <?php echo $filter === 'rejected' ? 'btn-primary' : ''; ?>">
-                Từ chối
-            </a>
+        <div style="display: flex; gap: 0.25rem; flex-wrap: wrap; align-items: center;">
+            <a href="qlbaiviet.php?filter=all" class="btn <?php echo $filter === 'all' ? 'btn-primary' : ''; ?> filter-btn">Tất cả</a>
+            <a href="qlbaiviet.php?filter=pending" class="btn <?php echo $filter === 'pending' ? 'btn-primary' : ''; ?> filter-btn">Chờ duyệt</a>
+            <a href="qlbaiviet.php?filter=approved" class="btn <?php echo $filter === 'approved' ? 'btn-primary' : ''; ?> filter-btn">Đã duyệt</a>
+            <a href="qlbaiviet.php?filter=rejected" class="btn <?php echo $filter === 'rejected' ? 'btn-primary' : ''; ?> filter-btn">Từ chối</a>
         </div>
     </div>
 
@@ -222,6 +232,7 @@ include 'header.php';
             <tr>
                 <th style="width: 60px;">ID</th>
                 <th>Tiêu Đề</th>
+                <th style="width: 140px;">Chủ Đề</th>
                 <th style="width: 150px;">Tác Giả</th>
                 <th style="width: 100px;">Bình Luận</th>
                 <th style="width: 120px;">Trạng Thái</th>
@@ -249,6 +260,7 @@ include 'header.php';
                         <?php echo substr(strip_tags($post['noi_dung']), 0, 100); ?>...
                     </div>
                 </td>
+                <td><?php echo $post['ten_chude'] ? htmlspecialchars($post['ten_chude']) : '<span style="color:#e74c3c;font-weight:600;">Chưa có chủ đề</span>'; ?></td>
                 <td><?php echo htmlspecialchars($post['ho_ten'] ?? 'N/A'); ?></td>
                 <td>
                     <span class="badge" style="background: #3498db; color: white;">
@@ -492,6 +504,14 @@ window.onclick = function(event) {
     font-size: 0.875em;
     font-weight: 700;
     border-radius: 0.35rem;
+}
+
+.filter-btn {
+    padding: 0.25em 0.7em !important;
+    font-size: 0.95em !important;
+    margin: 0 !important;
+    min-width: unset !important;
+    white-space: nowrap;
 }
 </style>
 

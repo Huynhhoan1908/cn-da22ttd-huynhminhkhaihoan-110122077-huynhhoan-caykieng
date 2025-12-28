@@ -9,27 +9,40 @@ $user_id = $_SESSION['user_id'] ?? 0;
 
 try {
     if ($action === 'get_notifications') {
-        // Lấy thông báo từ bảng thong_bao cho user hiện tại
-        if ($user_id <= 0) {
-            echo json_encode(['success' => true, 'notifications' => [], 'unread_count' => 0]);
-            exit;
-        }
-        $stmt = $conn->prepare("
-            SELECT id, type, title, message, link, is_read, created_at
-            FROM thong_bao
-            WHERE user_id = ?
-            ORDER BY created_at DESC
-            LIMIT 20
-        ");
-        $stmt->execute([$user_id]);
-        $notifications = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        // Lấy thông báo cá nhân
+        $notifications = [];
         $unreadCount = 0;
-        foreach ($notifications as &$notif) {
-            if (!$notif['is_read']) $unreadCount++;
+        if ($user_id > 0) {
+            $stmt = $conn->prepare("
+                SELECT id, type, title, message, link, is_read, created_at
+                FROM thong_bao
+                WHERE user_id = ?
+                ORDER BY created_at DESC
+                LIMIT 20
+            ");
+            $stmt->execute([$user_id]);
+            $notifications = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            foreach ($notifications as &$notif) {
+                if (!$notif['is_read']) $unreadCount++;
+            }
         }
+
+        // Lấy thông báo chung cho tất cả user
+        $stmt2 = $conn->prepare("SELECT id, 'announcement' as type, tieu_de as title, noi_dung as message, duong_dan as link, 0 as is_read, ngay_tao as created_at FROM thong_bao_chung ORDER BY ngay_tao DESC LIMIT 10");
+        $stmt2->execute();
+        $chung = $stmt2->fetchAll(PDO::FETCH_ASSOC);
+
+        // Gộp thông báo cá nhân và chung (ưu tiên cá nhân trước)
+        $all = array_merge($notifications, $chung);
+
+        // Sắp xếp lại theo thời gian mới nhất
+        usort($all, function($a, $b) {
+            return strtotime($b['created_at']) - strtotime($a['created_at']);
+        });
+
         echo json_encode([
             'success' => true,
-            'notifications' => $notifications,
+            'notifications' => $all,
             'unread_count' => $unreadCount
         ]);
         

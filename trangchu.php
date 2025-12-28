@@ -1200,15 +1200,16 @@ img {
     </nav>
 
     <div class="header-actions">
+        <!-- Nút search ẩn để notifications.js luôn chèn chuông đúng vị trí, giúp chuông luôn bấm được -->
+        <a href="#" class="icon-btn" style="display:none;" tabindex="-1"><i class="fas fa-search"></i></a>
         <a href="giohang.php" class="icon-btn">
-            <i class="fas fa-shopping-bag"></i>
-            <span class="cart-badge" style="display:none;">0</span>
+          <i class="fas fa-shopping-bag"></i>
+          <span class="cart-badge" style="display:none;">0</span>
         </a>
-        
         <?php if (isset($_SESSION['user_id'])): ?>
-            <a href="logout.php" class="icon-btn" title="Đăng xuất"><i class="fas fa-sign-out-alt"></i></a>
+          <a href="logout.php" class="icon-btn" title="Đăng xuất"><i class="fas fa-sign-out-alt"></i></a>
         <?php else: ?>
-            <a href="dangnhap.php" class="icon-btn" title="Đăng nhập"><i class="fas fa-sign-in-alt"></i></a>
+          <a href="dangnhap.php" class="icon-btn" title="Đăng nhập"><i class="fas fa-sign-in-alt"></i></a>
         <?php endif; ?>
     </div>
   </div>

@@ -29,65 +29,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         exit();
     }
 
-    // 2. FORM: Thêm & Sửa
-    if ($_POST['action'] === 'add' || $_POST['action'] === 'edit') {
+    // 2. FORM: Thêm mới, đổi quyền, đổi mật khẩu
+    if ($_POST['action'] === 'add') {
         $ho_ten = $_POST['ho_ten'];
         $ten_dang_nhap = $_POST['ten_dang_nhap'] ?? '';
         $email = $_POST['email'];
-        $sdt = $_POST['so_dien_thoai']; // Lấy dữ liệu từ form
-        $dia_chi = $_POST['dia_chi'];   // Lấy dữ liệu từ form
+        $sdt = $_POST['so_dien_thoai'];
+        $dia_chi = $_POST['dia_chi'];
         $role = $_POST['vai_tro'];
-
-        // --- XỬ LÝ THÊM MỚI ---
-        if ($_POST['action'] === 'add') {
-            // Kiểm tra trùng
-            $check = $conn->query("SELECT id FROM nguoi_dung WHERE ten_dang_nhap = '$ten_dang_nhap' OR email = '$email'");
-            if ($check && $check->num_rows > 0) {
-                echo "<script>alert('Lỗi: Tên đăng nhập hoặc Email đã tồn tại!'); window.history.back();</script>";
-                exit;
-            }
-            
-            $pass = password_hash($_POST['mat_khau'], PASSWORD_DEFAULT);
-            
-            // SQL INSERT ĐÃ CẬP NHẬT: Thêm so_dien_thoai và dia_chi
-            $sql = "INSERT INTO nguoi_dung (ho_ten, ten_dang_nhap, email, so_dien_thoai, dia_chi, mat_khau, quyen) VALUES (?, ?, ?, ?, ?, ?, ?)";
-            
-            $stmt = $conn->prepare($sql);
-            if (!$stmt) die("Lỗi SQL Add: " . $conn->error);
-            
-            // Bind 7 tham số (sssssss)
-            $stmt->bind_param("sssssss", $ho_ten, $ten_dang_nhap, $email, $sdt, $dia_chi, $pass, $role);
-            
-            if ($stmt->execute()) echo "<script>alert('Thêm mới thành công!'); window.location.href='qlkhachhang.php';</script>";
-            else echo "<script>alert('Lỗi thêm: " . $stmt->error . "');</script>";
-        
-        // --- XỬ LÝ CẬP NHẬT ---
-        } elseif ($_POST['action'] === 'edit') {
-            $id = $_POST['user_id'];
-            
-            // SQL UPDATE ĐÃ CẬP NHẬT
-            $sql = "UPDATE nguoi_dung SET ho_ten=?, email=?, so_dien_thoai=?, dia_chi=?, quyen=?";
-            $params = [$ho_ten, $email, $sdt, $dia_chi, $role];
-            $types = "sssss"; // 5 chuỗi đầu
-
-            // Nếu đổi mật khẩu
-            if (!empty($_POST['mat_khau'])) {
-                $sql .= ", mat_khau=?";
-                $params[] = password_hash($_POST['mat_khau'], PASSWORD_DEFAULT);
-                $types .= "s";
-            }
-            $sql .= " WHERE id=?";
-            $params[] = $id;
-            $types .= "i"; // id là số
-
-            $stmt = $conn->prepare($sql);
-            if (!$stmt) die("Lỗi SQL Edit: " . $conn->error);
-            
-            $stmt->bind_param($types, ...$params);
-            
-            if ($stmt->execute()) echo "<script>alert('Cập nhật thành công!'); window.location.href='qlkhachhang.php';</script>";
-            else echo "<script>alert('Lỗi sửa: " . $stmt->error . "');</script>";
+        // Kiểm tra trùng
+        $check = $conn->query("SELECT id FROM nguoi_dung WHERE ten_dang_nhap = '$ten_dang_nhap' OR email = '$email'");
+        if ($check && $check->num_rows > 0) {
+            echo "<script>alert('Lỗi: Tên đăng nhập hoặc Email đã tồn tại!'); window.history.back();</script>";
+            exit;
         }
+        $pass = password_hash($_POST['mat_khau'], PASSWORD_DEFAULT);
+        $sql = "INSERT INTO nguoi_dung (ho_ten, ten_dang_nhap, email, so_dien_thoai, dia_chi, mat_khau, quyen) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        $stmt = $conn->prepare($sql);
+        if (!$stmt) die("Lỗi SQL Add: " . $conn->error);
+        $stmt->bind_param("sssssss", $ho_ten, $ten_dang_nhap, $email, $sdt, $dia_chi, $pass, $role);
+        if ($stmt->execute()) echo "<script>alert('Thêm mới thành công!'); window.location.href='qlkhachhang.php';</script>";
+        else echo "<script>alert('Lỗi thêm: " . $stmt->error . "');</script>";
+    }
+    if ($_POST['action'] === 'edit') {
+        $id = $_POST['user_id'];
+        $role = $_POST['vai_tro'];
+        $sql = "UPDATE nguoi_dung SET quyen=?";
+        $params = [$role];
+        $types = "s";
+        if (!empty($_POST['mat_khau'])) {
+            $sql .= ", mat_khau=?";
+            $params[] = password_hash($_POST['mat_khau'], PASSWORD_DEFAULT);
+            $types .= "s";
+        }
+        $sql .= " WHERE id=?";
+        $params[] = $id;
+        $types .= "i";
+        $stmt = $conn->prepare($sql);
+        if (!$stmt) die("Lỗi SQL Edit: " . $conn->error);
+        $stmt->bind_param($types, ...$params);
+        if ($stmt->execute()) echo "<script>alert('Cập nhật thành công!'); window.location.href='qlkhachhang.php';</script>";
+        else echo "<script>alert('Lỗi cập nhật: " . $stmt->error . "');</script>";
     }
 }
 
@@ -147,10 +129,10 @@ include 'header.php';
                     <div style="font-size:12px; color:#666;"><i class="fas fa-map-marker-alt"></i> <?php echo htmlspecialchars($u['diachi']); ?></div>
                 </td>
                 <td>
-                    <?php $isAdmin = ($u['vaitro'] == 1 || $u['vaitro'] == 'admin'); ?>
-                    <span style="background:<?php echo $isAdmin?'#dc3545':'#17a2b8'; ?>; color:white; padding:3px 8px; border-radius:4px; font-size:12px;">
-                        <?php echo $isAdmin ? 'Admin' : 'Khách'; ?>
-                    </span>
+                    <select onchange="changeRole(<?php echo $u['id']; ?>, this.value)" style="padding:3px 8px; border-radius:4px; font-size:12px; background:<?php echo ($u['vaitro']=='admin'||$u['vaitro']=='1')?'#dc3545':'#17a2b8'; ?>; color:white; border:none;">
+                        <option value="user" style="color:#17a2b8; background:white;" <?php if($u['vaitro']=='user'||$u['vaitro']=='0') echo 'selected'; ?>>Khách</option>
+                        <option value="admin" style="color:#dc3545; background:white;" <?php if($u['vaitro']=='admin'||$u['vaitro']=='1') echo 'selected'; ?>>Admin</option>
+                    </select>
                 </td>
                 <td>
                     <?php if($u['khoa']): ?>
@@ -160,17 +142,6 @@ include 'header.php';
                     <?php endif; ?>
                 </td>
                 <td>
-                    <button type="button" class="btn-action" style="background:#ffc107; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;"
-                        onclick="openEditModal(
-                            '<?php echo $u['id']; ?>',
-                            '<?php echo htmlspecialchars($u['ho_ten']); ?>',
-                            '<?php echo htmlspecialchars($u['email']); ?>',
-                            '<?php echo htmlspecialchars($u['sodienthoai']); ?>',
-                            '<?php echo htmlspecialchars($u['diachi']); ?>',
-                            '<?php echo $isAdmin ? 'admin' : 'user'; ?>'
-                        )">
-                        <i class="fas fa-edit"></i>
-                    </button>
                     
                     <?php if($u['khoa']): ?>
                         <button onclick="toggleLock(<?php echo $u['id']; ?>, 0)" style="background:#28a745; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;" title="Mở khóa"><i class="fas fa-unlock"></i></button>
@@ -233,30 +204,12 @@ include 'header.php';
 </div>
 
 <div id="editModal" class="custom-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999;">
-    <div style="background:white; width:500px; margin:50px auto; padding:20px; border-radius:8px; position:relative;">
+    <div style="background:white; width:400px; margin:50px auto; padding:20px; border-radius:8px; position:relative;">
         <span onclick="closeModal('editModal')" style="position:absolute; right:15px; top:10px; font-size:24px; cursor:pointer;">&times;</span>
-        <h3 style="margin-top:0;">Cập Nhật Thông Tin</h3>
-        
+        <h3 style="margin-top:0;">Cập Nhật Quyền & Mật Khẩu</h3>
         <form method="POST">
             <input type="hidden" name="action" value="edit">
             <input type="hidden" name="user_id" id="edit_id">
-            
-            <div style="margin-bottom:15px;">
-                <label>Họ tên</label>
-                <input type="text" name="ho_ten" id="edit_name" required style="width:100%; padding:8px; border:1px solid #ddd;">
-            </div>
-            <div style="margin-bottom:15px;">
-                <label>Email</label>
-                <input type="email" name="email" id="edit_email" required style="width:100%; padding:8px; border:1px solid #ddd;">
-            </div>
-            <div style="margin-bottom:15px;">
-                <label>Số điện thoại</label>
-                <input type="text" name="so_dien_thoai" id="edit_phone" style="width:100%; padding:8px; border:1px solid #ddd;">
-            </div>
-            <div style="margin-bottom:15px;">
-                <label>Địa chỉ</label>
-                <input type="text" name="dia_chi" id="edit_address" style="width:100%; padding:8px; border:1px solid #ddd;">
-            </div>
             <div style="margin-bottom:15px;">
                 <label>Mật khẩu mới (Để trống nếu không đổi)</label>
                 <input type="password" name="mat_khau" placeholder="******" style="width:100%; padding:8px; border:1px solid #ddd;">
@@ -280,18 +233,6 @@ include 'header.php';
 function openModal(id) { document.getElementById(id).style.display = 'block'; }
 function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
-function openEditModal(id, name, email, phone, address, role) {
-    document.getElementById('edit_id').value = id;
-    document.getElementById('edit_name').value = name;
-    document.getElementById('edit_email').value = email;
-    // Điền SĐT và Địa chỉ vào ô input
-    document.getElementById('edit_phone').value = (phone == '---' ? '' : phone);
-    document.getElementById('edit_address').value = (address == '---' ? '' : address);
-    
-    document.getElementById('edit_role').value = (role == 'admin' || role == '1') ? 'admin' : 'user';
-    openModal('editModal');
-}
-
 function toggleLock(id, lock) {
     var fd = new FormData();
     fd.append('action', 'toggle_lock');
@@ -311,6 +252,18 @@ function deleteUser(id) {
     fetch('', { method:'POST', body:fd }).then(r=>r.json()).then(res=>{
         if(res.success) location.reload();
         else alert(res.message);
+    });
+}
+
+function changeRole(id, role) {
+    if(!confirm('Bạn có chắc muốn đổi quyền tài khoản này?')) return;
+    var fd = new FormData();
+    fd.append('action', 'edit');
+    fd.append('user_id', id);
+    fd.append('vai_tro', role);
+    fetch('', { method:'POST', body:fd }).then(r=>r.text()).then(res=>{
+        if(res.includes('Cập nhật thành công')) location.reload();
+        else alert(res);
     });
 }
 

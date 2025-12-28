@@ -931,7 +931,8 @@ CREATE TABLE `thong_bao` (
   `message` text NOT NULL,
   `link` varchar(255) DEFAULT NULL,
   `is_read` tinyint(1) DEFAULT 0,
-  `created_at` datetime DEFAULT current_timestamp()
+  `created_at` datetime DEFAULT current_timestamp(),
+  CONSTRAINT fk_thong_bao_user FOREIGN KEY (`user_id`) REFERENCES `nguoi_dung`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --

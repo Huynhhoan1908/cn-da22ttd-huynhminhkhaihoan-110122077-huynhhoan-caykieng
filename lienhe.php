@@ -17,7 +17,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_contact'])) {
     $message = '<div class="alert error">Vui lòng điền đầy đủ Tên, Email và Nội dung.</div>';
   } else {
     // Tùy chọn: Gửi email thông báo cho Admin (cần cấu hình mail server)
-    // mail('HuynhHoanStore@gmail.com', "Liên hệ mới: $subject", $content, "From: $email");
+    // mail('HuynhHoan@gmail.com', "Liên hệ mới: $subject", $content, "From: $email");
         
     // Tùy chọn: Lưu vào bảng database (ví dụ: `lien_he`)
     // if (isset($conn)) {
@@ -39,7 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_contact'])) {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Liên Hệ — HuynhHoanStore</title>
+<title>Liên Hệ — HuynhHoan</title>
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -823,9 +823,9 @@ FOOTER
 <header class="header">
   <div class="container">
     <a class="brand-logo" style="display:flex;align-items:center;gap:12px;">
-      <img src="images/logo.jpg" alt="HuynhHoanStore Logo" style="height:45px;width:auto;border-radius:8px;">
+      <img src="images/logo.jpg" alt="HuynhHoan Logo" style="height:45px;width:auto;border-radius:8px;">
       <span style="color:#000;font-size:1.4rem;font-weight:600;">
-        HuynhHoanStore
+        HuynhHoan
       </span>
     </a>
 
@@ -858,7 +858,7 @@ FOOTER
           </div>
           <div class="info-content">
             <h3>Tên Cửa Hàng</h3>
-            <p>HuynhHoanStore</p>
+            <p>HuynhHoan</p>
           </div>
         </div>
 
@@ -905,24 +905,24 @@ FOOTER
 
       <!-- Image Card -->
       <div class="image-card">
-        <img src="images/logo.jpg" alt="HuynhHoanStore Store" style="min-height: 600px;">
+        <img src="images/logo.jpg" alt="HuynhHoan Store" style="min-height: 600px;">
         <div class="image-overlay">
           <h3>Không Gian Xanh Sang Trọng</h3>
-          <p>Trải nghiệm mua sắm đẳng cấp tại HuynhHoanStore với không gian xanh mát và đội ngũ tư vấn chuyên nghiệp</p>
+          <p>Trải nghiệm mua sắm đẳng cấp tại HuynhHoan với không gian xanh mát và đội ngũ tư vấn chuyên nghiệp</p>
         </div>
       </div>
     </div>
 
     <!-- Description Section -->
     <div class="description-section">
-      <h3>Về HuynhHoanStore</h3>
+      <h3>Về HuynhHoan</h3>
       <p>
-        <strong>Cảm ơn các bạn đã ghé thăm HuynhHoanStore — Cây Xanh Chất Lượng!</strong>
+        <strong>Cảm ơn các bạn đã ghé thăm HuynhHoan — Cây Xanh Chất Lượng!</strong>
       </p>
       <p>
         Chúng tôi chuyên cung cấp các loại cây cảnh, cây nội thất, cây phong thủy và cây để bàn, phù hợp cho không gian nhà ở, văn phòng, quán cà phê và cửa hàng. Mỗi sản phẩm đều được tuyển chọn kỹ lưỡng từ giống cây, độ khỏe, dáng cây đến chậu trồng, đảm bảo tính thẩm mỹ và sức sống bền lâu.
         <br><br>
-        HuynhHoanStore cam kết mang đến những sản phẩm cây xanh chất lượng cao, dễ chăm sóc, thân thiện với môi trường cùng sự tư vấn tận tâm, giúp không gian sống của bạn luôn xanh mát, hài hòa và tràn đầy năng lượng tích cực.
+        HuynhHoan cam kết mang đến những sản phẩm cây xanh chất lượng cao, dễ chăm sóc, thân thiện với môi trường cùng sự tư vấn tận tâm, giúp không gian sống của bạn luôn xanh mát, hài hòa và tràn đầy năng lượng tích cực.
       </p>
     </div>
 
@@ -953,10 +953,10 @@ FOOTER
 <!-- Footer -->
 <footer class="footer">
   <div class="container">
-    <p class="footer-text">© <?php echo date('Y'); ?> HuynhHoanStore — Đam mê cây cảnh</p>
+    <p class="footer-text">© <?php echo date('Y'); ?> HuynhHoan — Đam mê cây cảnh</p>
     <p class="footer-text" style="margin-top: 0.5rem;">
       Liên hệ: <a href="tel:0795474219" style="color: var(--accent-gold); font-weight: 600;">0795 474 219</a> | 
-      Email: <a href="mailto:HuynhHoanStore@gmail.com" style="color: var(--accent-gold); font-weight: 600;">HuynhHoanStore@gmail.com</a>
+      Email: <a href="mailto:HuynhHoan@gmail.com" style="color: var(--accent-gold); font-weight: 600;">HuynhHoan@gmail.com</a>
     </p>
   </div>
 </footer>
@@ -987,7 +987,7 @@ FOOTER
   // ===== CART BADGE =====
   function updateCartBadge() {
     try {
-      const items = JSON.parse(localStorage.getItem('HuynhHoanStore_cart_items') || '[]');
+      const items = JSON.parse(localStorage.getItem('HuynhHoan_cart_items') || '[]');
       const count = items.reduce((s, i) => s + (i.quantity || 0), 0);
       const badge = document.getElementById('cartBadge');
       if (badge) {

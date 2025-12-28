@@ -13,7 +13,7 @@ try {
         PDO::ATTR_EMULATE_PREPARES => false,
     ];
     $conn = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8mb4", $username, $password, $options);
-    
+    $conn->exec("set names utf8mb4");
 } catch(PDOException $e) {
     // Bổ sung thêm log lỗi
     error_log("Database Error: " . $e->getMessage());

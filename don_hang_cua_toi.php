@@ -1472,8 +1472,8 @@ try {
                 console.log('✅ Parsed data:', data);
                 closeReviewModal();
                 if (data.success) {
-                    // Chỉ hiển thị thông báo thành công, KHÔNG reload
                     alert('✅ Cảm ơn bạn đã đánh giá sản phẩm!\n\nĐánh giá của bạn đã được gửi đến quản trị viên.');
+                    location.reload();
                 } else {
                     alert('❌ ' + (data.message || 'Có lỗi xảy ra khi gửi đánh giá'));
                 }

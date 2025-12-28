@@ -113,6 +113,11 @@
                 <i class="fas fa-newspaper"></i> Bài Viết 
                 <span id="noti-post-badge" class="admin-menu-badge"></span>
             </a>
+        <li class="menu-item">
+            <a href="qlchude.php" class="menu-link">
+                <i class="fas fa-layer-group"></i> Chủ Đề Bài Viết 
+                <span id="noti-post-badge" class="admin-menu-badge"></span>
+            </a>
         </li>
         <li class="menu-item">
             <a href="qldanhgia.php" class="menu-link">
