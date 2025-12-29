@@ -1,0 +1,23 @@
+HƯỚNG DẪN LƯU ẢNH QR CODE
+========================
+
+Bạn cần lưu ảnh QR code từ file đính kèm vào thư mục images với tên: qr-payment.jpg
+
+Đường dẫn đầy đủ: c:\xampp\htdocs\Web\images\qr-payment.jpg
+
+CÁCH LÀM:
+1. Mở ảnh QR code đã gửi (ảnh có chữ "TRUONG THI MY PHUONG - 0325048679")
+2. Nhấn chuột phải vào ảnh và chọn "Save image as..." hoặc "Lưu ảnh"
+3. Đặt tên file: qr-payment.jpg
+4. Lưu vào thư mục: c:\xampp\htdocs\Web\images\
+
+SAU KHI LƯU XONG:
+- Mã QR sẽ chỉ hiển thị khi người dùng nhấn nút "Quét Mã QR Thanh Toán" màu vàng
+- Mã QR không tự động hiện khi mở modal thanh toán
+
+CẬP NHẬT ĐÃ THỰC HIỆN:
+✓ Thêm nút "Quét Mã QR Thanh Toán" (màu vàng/gold)
+✓ Mã QR mặc định bị ẩn
+✓ Chỉ hiển thị khi nhấn nút
+✓ Loại bỏ tự động tạo QR code
+✓ Dùng ảnh tĩnh thay vì tạo động

@@ -219,11 +219,19 @@ include 'header.php';
 <div class="table-container">
     <div class="section-header">
         <h2>Danh Sách Bài Viết (<?php echo count($posts); ?>)</h2>
-        <div style="display: flex; gap: 0.25rem; flex-wrap: wrap; align-items: center;">
-            <a href="qlbaiviet.php?filter=all" class="btn <?php echo $filter === 'all' ? 'btn-primary' : ''; ?> filter-btn">Tất cả</a>
-            <a href="qlbaiviet.php?filter=pending" class="btn <?php echo $filter === 'pending' ? 'btn-primary' : ''; ?> filter-btn">Chờ duyệt</a>
-            <a href="qlbaiviet.php?filter=approved" class="btn <?php echo $filter === 'approved' ? 'btn-primary' : ''; ?> filter-btn">Đã duyệt</a>
-            <a href="qlbaiviet.php?filter=rejected" class="btn <?php echo $filter === 'rejected' ? 'btn-primary' : ''; ?> filter-btn">Từ chối</a>
+        <div style="display: flex; gap: 0.5rem;">
+            <a href="qlbaiviet.php?filter=all" class="btn <?php echo $filter === 'all' ? 'btn-primary' : ''; ?>">
+                Tất cả
+            </a>
+            <a href="qlbaiviet.php?filter=pending" class="btn <?php echo $filter === 'pending' ? 'btn-primary' : ''; ?>">
+                Chờ duyệt
+            </a>
+            <a href="qlbaiviet.php?filter=approved" class="btn <?php echo $filter === 'approved' ? 'btn-primary' : ''; ?>">
+                Đã duyệt
+            </a>
+            <a href="qlbaiviet.php?filter=rejected" class="btn <?php echo $filter === 'rejected' ? 'btn-primary' : ''; ?>">
+                Từ chối
+            </a>
         </div>
     </div>
 
@@ -504,14 +512,6 @@ window.onclick = function(event) {
     font-size: 0.875em;
     font-weight: 700;
     border-radius: 0.35rem;
-}
-
-.filter-btn {
-    padding: 0.25em 0.7em !important;
-    font-size: 0.95em !important;
-    margin: 0 !important;
-    min-width: unset !important;
-    white-space: nowrap;
 }
 </style>
 

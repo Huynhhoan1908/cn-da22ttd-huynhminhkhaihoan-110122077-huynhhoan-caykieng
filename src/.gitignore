@@ -1,0 +1,32 @@
+# Vendor directory
+vendor/
+
+# Uploads directory
+uploads/*
+!uploads/.gitkeep
+
+# Environment files
+.env
+config.local.php
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Database files
+*.sql.gz
+*.sql.zip
+
+# Backup files
+*_backup.php
+*_old.php
+*.bak
