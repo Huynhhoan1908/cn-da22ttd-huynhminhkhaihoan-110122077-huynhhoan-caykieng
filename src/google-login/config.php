@@ -13,7 +13,7 @@ require_once $autoload;
 $client = new Google_Client();
 $client->setClientId("902945385310-v80qjnnlfi6k3v8ctt7n8svvthm640be.apps.googleusercontent.com");
 $client->setClientSecret("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");
-$client->setRedirectUri("http://localhost/WebCN/google-login/callback.php");
+$client->setRedirectUri("http://localhost/WebCN/src/google-login/callback.php");
 $client->addScope("email");
 $client->addScope("profile");
 ?>
