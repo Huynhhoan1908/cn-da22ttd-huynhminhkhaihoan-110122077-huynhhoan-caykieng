@@ -134,9 +134,9 @@ document.addEventListener("DOMContentLoaded", function() {
         'announcement': 'Thông báo',
         'order_status': 'Trạng thái đơn hàng'
       };
-
+      // Nếu có link thì thêm thuộc tính data-link
       return `
-        <div class="notification-item ${!notif.is_read ? 'unread' : ''}" data-id="${notif.id}">
+        <div class="notification-item ${!notif.is_read ? 'unread' : ''}" data-id="${notif.id}"${notif.link ? ` data-link="${escapeHtml(notif.link)}"` : ''}>
           <div class="notification-type type-${notif.type}">
             ${typeLabels[notif.type] || notif.type}
           </div>
@@ -146,6 +146,17 @@ document.addEventListener("DOMContentLoaded", function() {
         </div>
       `;
     }).join('');
+    // Thêm sự kiện click cho từng thông báo
+    Array.from(list.querySelectorAll('.notification-item')).forEach(item => {
+      item.onclick = function() {
+        const id = this.getAttribute('data-id');
+        const link = this.getAttribute('data-link');
+        markAsRead(id);
+        if (link) {
+          window.location.href = link;
+        }
+      };
+    });
   }
   
   // Đánh dấu đã đọc

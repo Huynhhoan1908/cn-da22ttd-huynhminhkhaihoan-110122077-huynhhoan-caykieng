@@ -1678,17 +1678,17 @@ img {
         let imgSrc = item.image || 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600';
         // Nếu là link tuyệt đối (http/https) thì giữ nguyên
         if (imgSrc && !imgSrc.startsWith('http')) {
-          // Nếu đã có /uploads/ ở đầu nhưng thiếu /WebCN, thêm vào
+          // Nếu đã có /uploads/ ở đầu nhưng thiếu /WebCN/src, thêm vào
           if (imgSrc.startsWith('/uploads/')) {
-            if (!imgSrc.startsWith('/WebCN/uploads/')) {
-              imgSrc = '/WebCN' + imgSrc;
+            if (!imgSrc.startsWith('/WebCN/src/src/uploads/')) {
+              imgSrc = '/WebCN/src/src' + imgSrc;
             }
           } else if (imgSrc.startsWith('uploads/')) {
-            // Nếu là uploads/abc.jpg thì thêm /WebCN/ vào đầu
-            imgSrc = '/WebCN/' + imgSrc;
-          } else if (!imgSrc.startsWith('/WebCN/uploads/')) {
-            // Nếu chỉ là tên file hoặc đường dẫn tương đối, thêm /WebCN/uploads/
-            imgSrc = '/WebCN/uploads/' + imgSrc.replace(/^\/*/, '');
+            // Nếu là uploads/abc.jpg thì thêm /WebCN/src/ vào đầu
+            imgSrc = '/WebCN/src/' + imgSrc;
+          } else if (!imgSrc.startsWith('/WebCN/src/uploads/')) {
+            // Nếu chỉ là tên file hoặc đường dẫn tương đối, thêm /WebCN/src/uploads/
+            imgSrc = '/WebCN/src/uploads/' + imgSrc.replace(/^\/*/, '');
           }
         }
         return `

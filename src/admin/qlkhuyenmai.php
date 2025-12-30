@@ -1,4 +1,3 @@
-
 <?php
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
@@ -16,8 +15,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
     header('Content-Type: application/json; charset=utf-8');
     
+    // Xử lý xoá
+    if ($_POST['action'] === 'delete') {
+        $id = (int)$_POST['id'];
+        $stmt = $conn->prepare("DELETE FROM khuyen_mai WHERE id = ?");
+        $stmt->bind_param("i", $id);
+        if ($stmt->execute()) {
+            echo json_encode(['success' => true, 'message' => 'Xóa thành công']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Lỗi: ' . $conn->error]);
+        }
+        exit;
+    }
+
+    // Xử lý thêm/sửa
     if ($_POST['action'] === 'add' || $_POST['action'] === 'edit') {
-        // (Khối lấy dữ liệu POST giữ nguyên) ...
+        // (Khối lấy dữ liệu POST giữ nguyên)
         $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
         $ma_khuyen_mai = strtoupper(trim($_POST['ma_khuyen_mai'] ?? ''));
         $ten_khuyen_mai = trim($_POST['ten_khuyen_mai'] ?? '');
@@ -28,76 +41,81 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $gia_tri_giam_toi_da = !empty($_POST['gia_tri_giam_toi_da']) ? (float)$_POST['gia_tri_giam_toi_da'] : 0.00;
         $so_luong_ma = !empty($_POST['so_luong_ma']) ? (int)$_POST['so_luong_ma'] : 0;
         $loai_ap_dung = $_POST['loai_ap_dung'] ?? 'tat_ca';
-        
-        // 🚨 SỬA LỖI NGÀY THÁNG TRỰC TIẾP
         $ngay_bat_dau = str_replace('T', ' ', $_POST['ngay_bat_dau']);
         $ngay_ket_thuc = str_replace('T', ' ', $_POST['ngay_ket_thuc']);
-        
         $trang_thai = isset($_POST['trang_thai']) ? 1 : 0;
         $danh_muc_ids = isset($_POST['danh_muc_ids']) ? $_POST['danh_muc_ids'] : [];
         $san_pham_ids = isset($_POST['san_pham_ids']) ? $_POST['san_pham_ids'] : [];
-        
-        // (Validation giữ nguyên) ...
 
         try {
             $conn->begin_transaction();
-            
             if ($_POST['action'] === 'add') {
-                // (Kiểm tra mã trùng) ...
+                // (Kiểm tra mã trùng)
                 $check = $conn->prepare("SELECT id FROM khuyen_mai WHERE ma_khuyen_mai = ?");
                 $check->bind_param("s", $ma_khuyen_mai);
                 $check->execute();
-                
-                // 🚨 LỖI CÓ THỂ Ở ĐÂY: Nếu không có mysqlnd, get_result() sẽ lỗi Fatal Error
-                $result = $check->get_result(); 
+                $result = $check->get_result();
                 if ($result->fetch_assoc()) {
                     $conn->rollback();
                     echo json_encode(['success' => false, 'message' => 'Mã khuyến mãi đã tồn tại']);
                     exit;
                 }
-                
-                // --- INSERT ---
                 $stmt = $conn->prepare("INSERT INTO khuyen_mai (ma_khuyen_mai, ten_khuyen_mai, mo_ta, loai_giam, gia_tri_giam, gia_tri_don_toi_thieu, gia_tri_giam_toi_da, so_luong_ma, loai_ap_dung, ngay_bat_dau, ngay_ket_thuc, trang_thai) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                
-                // 🚨 CHUỖI BIND CHUẨN: ssssdddisssi (12 tham số)
                 $stmt->bind_param(
-                    "ssssdddisssi", 
+                    "ssssdddisssi",
                     $ma_khuyen_mai,
                     $ten_khuyen_mai,
                     $mo_ta,
                     $loai_giam,
                     $gia_tri_giam,
                     $gia_tri_don_toi_thieu,
-                    $gia_tri_giam_toi_da, 
-                    $so_luong_ma, 
+                    $gia_tri_giam_toi_da,
+                    $so_luong_ma,
                     $loai_ap_dung,
                     $ngay_bat_dau,
                     $ngay_ket_thuc,
                     $trang_thai
                 );
-                
                 if (!$stmt->execute()) {
                     $conn->rollback();
-                    // Trả về lỗi SQL (nếu xảy ra)
                     echo json_encode(['success' => false, 'message' => 'Lỗi thực thi SQL: ' . $stmt->error]);
                     exit;
                 }
-                // ... (Phần còn lại của khối ADD và UPDATE giữ nguyên) ...
-                // Gửi thông báo cho tất cả user khi thêm mã khuyến mãi mới
                 if (file_exists(dirname(__DIR__) . '/notification_helpers.php')) {
                     require_once dirname(__DIR__) . '/notification_helpers.php';
                     try {
                         notify_new_promo_all_users($ten_khuyen_mai, $ma_khuyen_mai);
                     } catch (Exception $ex) { error_log('Lỗi gửi notification khuyến mãi: ' . $ex->getMessage()); }
                 }
-            } // <-- Đóng khối if ($_POST['action'] === 'add')
-
+            } else { // edit
+                $stmt = $conn->prepare("UPDATE khuyen_mai SET ma_khuyen_mai=?, ten_khuyen_mai=?, mo_ta=?, loai_giam=?, gia_tri_giam=?, gia_tri_don_toi_thieu=?, gia_tri_giam_toi_da=?, so_luong_ma=?, loai_ap_dung=?, ngay_bat_dau=?, ngay_ket_thuc=?, trang_thai=? WHERE id=?");
+                $stmt->bind_param(
+                    "ssssdddisssii",
+                    $ma_khuyen_mai,
+                    $ten_khuyen_mai,
+                    $mo_ta,
+                    $loai_giam,
+                    $gia_tri_giam,
+                    $gia_tri_don_toi_thieu,
+                    $gia_tri_giam_toi_da,
+                    $so_luong_ma,
+                    $loai_ap_dung,
+                    $ngay_bat_dau,
+                    $ngay_ket_thuc,
+                    $trang_thai,
+                    $id
+                );
+                if (!$stmt->execute()) {
+                    $conn->rollback();
+                    echo json_encode(['success' => false, 'message' => 'Lỗi cập nhật: ' . $stmt->error]);
+                    exit;
+                }
+            }
             $conn->commit();
             echo json_encode(['success' => true, 'message' => $_POST['action'] === 'add' ? 'Thêm mã khuyến mãi thành công' : 'Cập nhật thành công']);
         } catch (Exception $e) {
             $conn->rollback();
-            // Lỗi từ Exception (ví dụ: database không kết nối)
-            echo json_encode(['success' => false, 'message' => 'Lỗi xử lý database: ' . $e->getMessage()]); 
+            echo json_encode(['success' => false, 'message' => 'Lỗi xử lý database: ' . $e->getMessage()]);
         }
         exit;
     }

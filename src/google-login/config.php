@@ -5,7 +5,7 @@ if (!file_exists($autoload)) {
 	// Provide a clear error so developer knows how to fix it.
 	http_response_code(500);
 	echo "Composer autoload not found at: $autoload\n";
-	echo "Run `composer install` in the project root (c:/xampp/htdocs/WebCN) to install dependencies.";
+	echo "Run `composer install` in the project root (c:/xampp/htdocs/WebCN/src) to install dependencies.";
 	exit;
 }
 require_once $autoload;
